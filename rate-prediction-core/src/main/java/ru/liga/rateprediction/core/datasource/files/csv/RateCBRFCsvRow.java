@@ -1,4 +1,4 @@
-package ru.liga.rateprediction.core.files.csv;
+package ru.liga.rateprediction.core.datasource.files.csv;
 
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvDate;

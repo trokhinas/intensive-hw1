@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import ru.liga.rateprediction.core.datasource.files.csv.CsvParserParams;
+import ru.liga.rateprediction.core.datasource.files.csv.CsvToBeanReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package ru.liga.rateprediction.core.files.csv;
+package ru.liga.rateprediction.core.datasource.files.csv;
 
 import org.jetbrains.annotations.NotNull;
 

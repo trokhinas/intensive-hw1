@@ -4,13 +4,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.liga.rateprediction.core.CurrencyType;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor
@@ -20,11 +19,10 @@ public enum PredictionRange {
 
     private final String code;
 
-    public static PredictionRange byCode(String code) {
+    public static Optional<PredictionRange> byCode(String code) {
         return Arrays.stream(values())
                 .filter(x -> x.code.equalsIgnoreCase(code))
-                .findFirst()
-                .orElseThrow(() -> new EnumConstantNotPresentException(PredictionRange.class, code));
+                .findFirst();
     }
 
     public PredictionRange.Dates toDates() {
