@@ -1,7 +1,7 @@
 package ru.liga.rateprediction.core;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -42,15 +42,15 @@ class MeanRatePredictor implements RatePredictor {
     @Override
     public List<RatePrediction> predict(@NotNull LocalDate startDateInclusive,
                                         @NotNull LocalDate endDateInclusive) {
-        final Prediction prediction = doInitialPrediction();
-        while (!prediction.getPrediction().getDate().equals(startDateInclusive)) {
-            nextPrediction(prediction);
+        Prediction prediction = doInitialPrediction();
+        while (startDateInclusive.compareTo(prediction.getPrediction().getDate()) > 0) {
+            prediction = nextPrediction(prediction);
         }
 
         final List<RatePrediction> predictions = new ArrayList<>();
         predictions.add(prediction.getPrediction());
-        while (!prediction.getPrediction().getDate().equals(endDateInclusive)) {
-            nextPrediction(prediction);
+        while (endDateInclusive.compareTo(prediction.getPrediction().getDate()) > 0) {
+            prediction = nextPrediction(prediction);
             predictions.add(prediction.getPrediction());
         }
 
@@ -59,9 +59,9 @@ class MeanRatePredictor implements RatePredictor {
 
     @Override
     public RatePrediction predict(@NotNull LocalDate predictionDate) {
-        final Prediction prediction = doInitialPrediction();
+        Prediction prediction = doInitialPrediction();
         while (predictionDate.compareTo(prediction.getPrediction().getDate()) > 0) {
-            nextPrediction(prediction);
+            prediction = nextPrediction(prediction);
         }
 
         return prediction.getPrediction();
@@ -81,40 +81,36 @@ class MeanRatePredictor implements RatePredictor {
         );
     }
 
-    private void nextPrediction(Prediction prediction) {
-        // update data that would be used for prediction
-        prediction.getUsedData().removeFirst();
-        prediction.getUsedData().addLast(prediction.getPrediction());
+    private Prediction nextPrediction(Prediction prediction) {
+        final Deque<RatePrediction> usedData = new ArrayDeque<>(prediction.getUsedData());
+        usedData.removeFirst();
+        usedData.addLast(prediction.getPrediction());
 
-        // do the actual prediction
-        prediction.setPrediction(nextRatePrediction(
-                prediction.getPrediction(),
-                prediction.getUsedData()
-        ));
+        return new Prediction(
+                usedData,
+                nextRatePrediction(usedData.getLast(), usedData)
+        );
     }
 
     private RatePrediction nextRatePrediction(RatePrediction latestPrediction,
                                               Collection<RatePrediction> previousPredictions) {
-        return new RatePrediction(
-                latestPrediction.getDate().plusDays(1),
-                predictRate(previousPredictions)
-        );
-    }
+        final LocalDate nextDate = latestPrediction.getDate().plusDays(1);
+        final BigDecimal nextRate = previousPredictions.stream()
+                .map(RatePrediction::getRate)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(previousPredictions.size()), 4, RoundingMode.HALF_UP);
 
-    private BigDecimal predictRate(Collection<RatePrediction> predictions) {
-        return predictions.stream()
-                .map(RatePrediction::getRate).reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(predictions.size()), 4, RoundingMode.HALF_UP);
+        return new RatePrediction(nextDate, nextRate);
     }
 
     /**
      * Local private static data class containing prediction info
      */
-    @Data
+    @Value
     @AllArgsConstructor
     private static class Prediction {
-        private final Deque<RatePrediction> usedData;
+        Deque<RatePrediction> usedData;
 
-        private RatePrediction prediction;
+        RatePrediction prediction;
     }
 }

@@ -10,10 +10,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 public class Main {
     private static final Set<CurrencyType> SUPPORTED_CURRENCY_TYPES = EnumSet.of(
@@ -30,20 +27,24 @@ public class Main {
 
     private static final RatePredictionFacade FACADE = new RatePredictionFacade();
 
-    public static void main(String[] args) throws ParseException {
-        final CommandLineParser commandLineParser = new DefaultParser();
-        final CommandLine commandLine = commandLineParser.parse(new Options(), args);
-
-        if (commandLine.getArgList().size() != 3) {
+    public static void main(String[] args) {
+        if (args.length != 3) {
             throw new IllegalArgumentException(
                     "Command must contains exactly 3 parameters: prediction type, currency type, range. " +
                             "For example: \"rate TRY tomorrow\" or \"rate USD week\""
             );
         }
 
-        final String command = validateCommand(commandLine.getArgList().get(0));
-        final CurrencyType currencyType = validateCurrencyType(commandLine.getArgList().get(1));
-        final PredictionRange predictionRange = validatePredictionRange(commandLine.getArgList().get(2));
+        final Optional<CliCommand> cliCommand = CliCommand.byCode(args[0]);
+        if (cliCommand.isEmpty()) {
+            System.out.printf(
+                    "Unknown command = %s! Supported commands = %s",
+                    args[0], Arrays.toString(CliCommand.values())
+            );
+            return;
+        }
+        final CurrencyType currencyType = validateCurrencyType(args[1]);
+        final PredictionRange predictionRange = validatePredictionRange(args[2]);
         final PredictionRange.Dates dates = predictionRange.toDates();
         FACADE.predictMean(currencyType, dates.getStart(), dates.getEnd(), MeanRatePredictorParams.builder().build())
                 .stream()
@@ -57,17 +58,6 @@ public class Main {
                 CLI_DATE_FORMATTER.format(ratePrediction.getDate()),
                 CLI_RATE_FORMATTER.format(ratePrediction.getRate())
         );
-    }
-
-    private static String validateCommand(String command) {
-        if (command.equalsIgnoreCase("rate")) {
-            return command;
-        }
-
-        throw new IllegalArgumentException(String.format(
-                "Unknown command = %s! Supported commands = \"%s\"",
-                command, "rate"
-        ));
     }
 
     private static CurrencyType validateCurrencyType(String abbreviation) {

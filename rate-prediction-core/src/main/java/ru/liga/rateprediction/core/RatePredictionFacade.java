@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 //TODO пока также не очень ясно, как построить входную точку, открытую для расширений, но не раскрывающую лишних деталей реализации
@@ -20,7 +21,7 @@ public class RatePredictionFacade {
                                             @NotNull LocalDate startDateInclusive,
                                             @Nullable LocalDate endDateInclusive,
                                             @Nullable MeanRatePredictorParams predictorParams) {
-        predictorParams = predictorParams == null ? MeanRatePredictorParams.builder().build() : predictorParams;
+        predictorParams = Optional.ofNullable(predictorParams).orElseGet(() -> MeanRatePredictorParams.builder().build());
         validateDates(startDateInclusive, endDateInclusive);
         validateMeanPredictorParams(predictorParams);
 
