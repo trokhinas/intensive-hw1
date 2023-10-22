@@ -1,6 +1,7 @@
 package ru.liga.rateprediction.core;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.liga.rateprediction.core.algorithm.RatePredictionAlgorithm;
@@ -12,6 +13,7 @@ import ru.liga.rateprediction.core.datasource.PredictionDataSourceFactory;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 public class RatePredictionFacade {
     // todo пока не придумал как избавиться от этой зависимости
@@ -30,6 +32,10 @@ public class RatePredictionFacade {
                                             @NotNull CurrencyType currencyType,
                                             @NotNull LocalDate startDateInclusive,
                                             @Nullable LocalDate endDateInclusive) {
+        log.info("Start predict rate with alg = {}, for currency = {} in range [{} - {}]",
+                algorithm, currencyType, startDateInclusive, endDateInclusive
+        );
+
         validateDates(startDateInclusive, endDateInclusive);
         final RatePredictor ratePredictor = ratePredictorFactory.create(algorithm);
         final PredictionDataSource predictionDataSource = predictionDataSourceFactory.create(currencyType);

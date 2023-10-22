@@ -48,7 +48,9 @@ class CsvToBeanReaderOpenCSV implements CsvToBeanReader {
                 .withQuoteChar(readerParams.getQuoteCharacter())
                 .build();
 
-        return new CSVReaderBuilder(new InputStreamReader(inputStream)).withCSVParser(parser).build();
+        return new CSVReaderBuilder(new InputStreamReader(inputStream))
+                .withCSVParser(parser)
+                .build();
     }
 
     private void checkIsPositive(int arg, String name) {

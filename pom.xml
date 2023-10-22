@@ -24,6 +24,7 @@
         <jetbrains-annotations.version>24.0.1</jetbrains-annotations.version>
         <junit-jupiter.version>5.10.0</junit-jupiter.version>
         <assertj.version>3.24.2</assertj.version>
+        <logback.version>1.4.11</logback.version>
 
         <opencsv.version>5.8</opencsv.version>
 
@@ -64,6 +65,18 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
             </dependency>
 
             <dependency>

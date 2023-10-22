@@ -5,5 +5,5 @@ import ru.liga.rateprediction.core.RatePrediction;
 import java.util.List;
 
 public interface PredictionDataSource {
-    List<RatePrediction> getData(int rows);
+    List<RatePrediction> getData(int rowsCount);
 }

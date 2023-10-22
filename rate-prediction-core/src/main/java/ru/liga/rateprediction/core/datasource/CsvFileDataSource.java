@@ -1,5 +1,6 @@
 package ru.liga.rateprediction.core.datasource;
 
+import lombok.extern.slf4j.Slf4j;
 import ru.liga.rateprediction.core.RatePrediction;
 import ru.liga.rateprediction.core.datasource.files.csv.CsvParserParams;
 import ru.liga.rateprediction.core.datasource.files.csv.CsvToBeanReader;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 class CsvFileDataSource<T> implements PredictionDataSource {
     private final CsvToBeanReader csvToBeanReader;
 
@@ -33,12 +35,15 @@ class CsvFileDataSource<T> implements PredictionDataSource {
     }
 
     @Override
-    public List<RatePrediction> getData(int rows) {
-        try(final InputStream inputStream = getInputStream()) {
-            return csvToBeanReader.readLines(inputStream, csvParserParams, csvBeanType, rows)
+    public List<RatePrediction> getData(int rowsCount) {
+        log.info("Try to read {} CSV rows from {}", rowsCount, filepath);
+        try (final InputStream inputStream = getInputStream()) {
+            final List<RatePrediction> rows = csvToBeanReader.readLines(inputStream, csvParserParams, csvBeanType, rowsCount)
                     .stream()
                     .map(csvBeanMapper)
                     .collect(Collectors.toList());
+            log.info("Fetched {}/{} rows", rows.size(), rowsCount);
+            return rows;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
