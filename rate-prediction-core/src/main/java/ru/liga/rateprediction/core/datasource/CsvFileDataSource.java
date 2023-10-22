@@ -13,16 +13,20 @@ import java.util.stream.Collectors;
 class CsvFileDataSource<T> implements PredictionDataSource {
     private final CsvToBeanReader csvToBeanReader;
 
+    private final CsvParserParams csvParserParams;
+
     private final Class<T> csvBeanType;
 
     private final Function<T, RatePrediction> csvBeanMapper;
     private final String filepath;
 
     public CsvFileDataSource(CsvToBeanReader csvToBeanReader,
+                             CsvParserParams csvParserParams,
                              Class<T> csvBeanType,
                              Function<T, RatePrediction> csvBeanMapper,
                              String filepath) {
         this.csvToBeanReader = csvToBeanReader;
+        this.csvParserParams = csvParserParams;
         this.csvBeanType = csvBeanType;
         this.csvBeanMapper = csvBeanMapper;
         this.filepath = filepath;
@@ -31,7 +35,7 @@ class CsvFileDataSource<T> implements PredictionDataSource {
     @Override
     public List<RatePrediction> getData(int rows) {
         try(final InputStream inputStream = getInputStream()) {
-            return csvToBeanReader.readLines(inputStream, CsvParserParams.builder().build(), csvBeanType, rows)
+            return csvToBeanReader.readLines(inputStream, csvParserParams, csvBeanType, rows)
                     .stream()
                     .map(csvBeanMapper)
                     .collect(Collectors.toList());
