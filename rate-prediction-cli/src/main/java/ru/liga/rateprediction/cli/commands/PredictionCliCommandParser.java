@@ -21,8 +21,6 @@ public class PredictionCliCommandParser {
 
     public PredictionCliCommand parse(String userInput) {
         final String[] args = ARGS_DELIMITER.split(userInput);
-
-
         final Optional<CliCommand> predictionCommand = CliCommand.byCode(args[0]);
         if (predictionCommand.isEmpty()) {
             return new InvalidPredictionCliCommand(String.format(

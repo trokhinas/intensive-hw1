@@ -1,5 +1,6 @@
 package ru.liga.rateprediction.cli.commands;
 
+import lombok.Getter;
 import ru.liga.rateprediction.core.CurrencyType;
 import ru.liga.rateprediction.core.RatePrediction;
 import ru.liga.rateprediction.core.RatePredictionFacade;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+@Getter
 class RatePredictionCliCommand implements PredictionCliCommand {
     private static final DateTimeFormatter CLI_DATE_FORMATTER = DateTimeFormatter
             .ofPattern("E dd.MM.yyyy")
