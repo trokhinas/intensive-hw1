@@ -1,7 +1,7 @@
 package ru.liga.rateprediction.cli.commands;
 
-import ru.liga.rateprediction.cli.CliCommand;
-import ru.liga.rateprediction.cli.PredictionRange;
+import ru.liga.rateprediction.cli.controller.CliCommand;
+import ru.liga.rateprediction.cli.controller.PredictionRange;
 import ru.liga.rateprediction.core.CurrencyType;
 
 import java.util.Arrays;

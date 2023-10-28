@@ -51,6 +51,20 @@ class PredictionCliCommandParserTest {
                         null,
                         null
                 )))
+                .add(Arguments.of("rate bgn tomorrow", new RatePredictionCliCommand(
+                        RatePredictionAlgorithm.MEAN,
+                        CurrencyType.BGN,
+                        LocalDate.now().plusDays(1),
+                        null,
+                        null
+                )))
+                .add(Arguments.of("rate amd tomorrow", new RatePredictionCliCommand(
+                        RatePredictionAlgorithm.MEAN,
+                        CurrencyType.AMD,
+                        LocalDate.now().plusDays(1),
+                        null,
+                        null
+                )))
                 .build();
     }
 
