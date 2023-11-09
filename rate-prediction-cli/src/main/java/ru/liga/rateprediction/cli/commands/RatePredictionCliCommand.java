@@ -3,7 +3,7 @@ package ru.liga.rateprediction.cli.commands;
 import lombok.Getter;
 import ru.liga.rateprediction.core.CurrencyType;
 import ru.liga.rateprediction.core.RatePrediction;
-import ru.liga.rateprediction.core.RatePredictionFacade;
+import ru.liga.rateprediction.core.RatePredictionService;
 import ru.liga.rateprediction.core.algorithm.RatePredictionAlgorithm;
 
 import java.text.DecimalFormat;
@@ -19,29 +19,29 @@ class RatePredictionCliCommand implements PredictionCliCommand {
             .ofPattern("E dd.MM.yyyy")
             .withLocale(Locale.forLanguageTag("ru"));
     private static final NumberFormat CLI_RATE_FORMATTER = new DecimalFormat(
-            "##.00", new DecimalFormatSymbols(Locale.forLanguageTag("ru"))
+            "00.00", new DecimalFormatSymbols(Locale.forLanguageTag("ru"))
     );
     private final RatePredictionAlgorithm ratePredictionAlgorithm;
     private final CurrencyType currencyType;
     private final LocalDate startDate;
     private final LocalDate endDate;
-    private final RatePredictionFacade ratePredictionFacade;
+    private final RatePredictionService ratePredictionService;
 
     public RatePredictionCliCommand(RatePredictionAlgorithm ratePredictionAlgorithm,
                                     CurrencyType currencyType,
                                     LocalDate startDate,
                                     LocalDate endDate,
-                                    RatePredictionFacade ratePredictionFacade) {
+                                    RatePredictionService ratePredictionService) {
         this.ratePredictionAlgorithm = ratePredictionAlgorithm;
         this.currencyType = currencyType;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.ratePredictionFacade = ratePredictionFacade;
+        this.ratePredictionService = ratePredictionService;
     }
 
     @Override
     public void execute() {
-        ratePredictionFacade.predictRate(ratePredictionAlgorithm, currencyType, startDate, endDate)
+        ratePredictionService.predictRate(ratePredictionAlgorithm, currencyType, startDate, endDate)
                 .stream()
                 .map(this::predictionToString)
                 .forEach(System.out::println);

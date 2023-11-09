@@ -13,6 +13,7 @@ import java.util.Comparator;
 @Value
 public class RatePrediction {
     public static final Comparator<RatePrediction> BY_DATE_ASC = Comparator.comparing(RatePrediction::getDate);
+    public static final Comparator<RatePrediction> BY_DATE_DESC = BY_DATE_ASC.reversed();
 
     /**
      * Date of rate

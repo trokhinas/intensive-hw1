@@ -1,36 +1,34 @@
 package ru.liga.rateprediction.cli.commands;
 
-import ru.liga.rateprediction.cli.CliCommand;
-import ru.liga.rateprediction.cli.PredictionRange;
+import lombok.RequiredArgsConstructor;
+import ru.liga.rateprediction.cli.controller.CliCommand;
+import ru.liga.rateprediction.cli.controller.PredictionRange;
 import ru.liga.rateprediction.core.CurrencyType;
-import ru.liga.rateprediction.core.RatePredictionFacade;
+import ru.liga.rateprediction.core.RatePredictionService;
 import ru.liga.rateprediction.core.algorithm.RatePredictionAlgorithm;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 public class PredictionCliCommandParser {
     private static final Pattern ARGS_DELIMITER = Pattern.compile("\\s");
 
-    private final RatePredictionFacade ratePredictionFacade;
-
-    public PredictionCliCommandParser(RatePredictionFacade ratePredictionFacade) {
-        this.ratePredictionFacade = ratePredictionFacade;
-    }
+    private final RatePredictionService ratePredictionService;
 
     public PredictionCliCommand parse(String userInput) {
         final String[] args = ARGS_DELIMITER.split(userInput);
-        final Optional<CliCommand> predictionCommand = CliCommand.byCode(args[0]);
-        if (predictionCommand.isEmpty()) {
+        try {
+            final CliCommand predictionCommand = CliCommand.byCode(args[0]);
+            return parseCommand(predictionCommand, args);
+        } catch (EnumConstantNotPresentException e) {
             return new InvalidPredictionCliCommand(String.format(
                     "Invalid command = %s! Available commands = %s",
                     args[0],
                     Arrays.toString(CliCommand.values())
             ));
         }
-
-        return parseCommand(predictionCommand.get(), args);
     }
 
     public void executeHelp() {
@@ -54,8 +52,10 @@ public class PredictionCliCommandParser {
             );
         }
 
-        final Optional<CurrencyType> currencyType = CurrencyType.byCode(args[1]);
-        if (currencyType.isEmpty()) {
+        final CurrencyType currencyType;
+        try {
+            currencyType = CurrencyType.byCode(args[1]);
+        } catch (EnumConstantNotPresentException e) {
             return new InvalidPredictionCliCommand(String.format(
                     "Invalid currency type = %s! Supported currency types = %s",
                     args[1],
@@ -75,10 +75,10 @@ public class PredictionCliCommandParser {
 
         return new RatePredictionCliCommand(
                 RatePredictionAlgorithm.MEAN,
-                currencyType.get(),
+                currencyType,
                 dates.getStart(),
                 dates.getEnd(),
-                ratePredictionFacade
+                ratePredictionService
         );
     }
 }

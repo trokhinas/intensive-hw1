@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import ru.liga.rateprediction.core.CurrencyType;
 import ru.liga.rateprediction.core.RatePrediction;
+import ru.liga.rateprediction.core.dao.RatePredictionDao;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,8 +19,16 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MeanRatePredictorTest {
+    private static final int DEFAULT_DEPTH = 7;
+
     public static Stream<Arguments> predictSingleVariants() {
         return Stream.<Arguments>builder()
+                .add(Arguments.of(
+                        //single value
+                        LocalDate.of(2023, 10, 16),
+                        List.of(new RatePrediction(LocalDate.of(2023, 10, 15), BigDecimal.ONE)),
+                        new RatePrediction(LocalDate.of(2023, 10, 16), BigDecimal.ONE)
+                ))
                 .add(Arguments.of(
                         //single value
                         LocalDate.of(2023, 10, 16),
@@ -50,6 +61,20 @@ class MeanRatePredictorTest {
 
     public static Stream<Arguments> predictRangeVariants() {
         return Stream.<Arguments>builder()
+                .add(Arguments.of(
+                        //single value
+                        LocalDate.of(2023, 10, 16),
+                        LocalDate.of(2023, 10, 18),
+                        List.of(
+                                new RatePrediction(LocalDate.of(2023, 10, 15), BigDecimal.ONE)
+                        ),
+                        List.of(
+                                new RatePrediction(LocalDate.of(2023, 10, 16), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 17), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 18), BigDecimal.ONE)
+                        )
+
+                ))
                 .add(Arguments.of(
                         //single value
                         LocalDate.of(2023, 10, 16),
@@ -99,54 +124,117 @@ class MeanRatePredictorTest {
                 .build();
     }
 
+    public static Stream<Arguments> invalidStartDateVariants() {
+        return Stream.<Arguments>builder()
+                .add(Arguments.of(
+                        //start date is current date
+                        LocalDate.of(2023, 10, 20),
+                        List.of(
+                                new RatePrediction(LocalDate.of(2023, 10, 17), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 18), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 19), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 20), BigDecimal.ONE)
+                        )
+                ))
+                .add(Arguments.of(
+                        //start date is past date
+                        LocalDate.of(2023, 10, 20),
+                        List.of(
+                                new RatePrediction(LocalDate.of(2023, 10, 17), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 18), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 19), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 20), BigDecimal.ONE),
+                                new RatePrediction(LocalDate.of(2023, 10, 21), BigDecimal.ONE)
+
+                        )
+                ))
+                .build();
+    }
+
+    @Test
+    void predict_whenNoDataIsProvided_thenThrowIAE() {
+        //given
+        final RatePredictionDao ratePredictionDao = Mockito.mock(RatePredictionDao.class);
+        final RatePredictor ratePredictor = new MeanRatePredictor(ratePredictionDao, DEFAULT_DEPTH);
+        final LocalDate startDate = LocalDate.now().plusDays(1);
+        final CurrencyType currencyType = CurrencyType.EUR;
+        Mockito.when(ratePredictionDao.getFirstOrderByDateDesc(currencyType, DEFAULT_DEPTH)).thenReturn(List.of());
+
+        //when + then
+        assertThatThrownBy(() -> ratePredictor.predict(currencyType, startDate, null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test
     void predict_whenInvalidDataIsProvided_thenThrowIAE() {
         //given
-        final List<RatePrediction> invalidData = List.of(
+        final RatePredictionDao ratePredictionDao = Mockito.mock(RatePredictionDao.class);
+        final RatePredictor ratePredictor = new MeanRatePredictor(ratePredictionDao, DEFAULT_DEPTH);
+        final LocalDate startDate = LocalDate.now().plusDays(1);
+        final LocalDate endDate = LocalDate.now().plusDays(7);
+        final CurrencyType currencyType = CurrencyType.EUR;
+        Mockito.when(ratePredictionDao.getFirstOrderByDateDesc(currencyType, DEFAULT_DEPTH)).thenReturn(List.of(
                 new RatePrediction(LocalDate.now().minusDays(2), BigDecimal.ONE),
                 new RatePrediction(LocalDate.now().minusDays(1), BigDecimal.TEN),
                 new RatePrediction(LocalDate.now(), BigDecimal.ONE),
                 new RatePrediction(LocalDate.now().plusDays(1), BigDecimal.ONE) // invalid, not in past or present
-        );
-        final RatePredictor ratePredictor = new MeanRatePredictor();
-        final LocalDate startDate = LocalDate.now().plusDays(1);
-        final LocalDate endDate = LocalDate.now().plusDays(7);
+        ));
 
         //when + then
-        assertThatThrownBy(() -> ratePredictor.predictSingle(invalidData, startDate))
+        assertThatThrownBy(() -> ratePredictor.predict(currencyType, startDate, endDate))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ratePredictor.predictRange(invalidData, startDate, endDate))
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidStartDateVariants")
+    void predict_whenIsNotPossibleToPredictPastOrPresent_thenThrowIAE(LocalDate startDate,
+                                                                      List<RatePrediction> initialData) {
+        //given
+        final RatePredictionDao ratePredictionDao = Mockito.mock(RatePredictionDao.class);
+        final MeanRatePredictor ratePredictor = new MeanRatePredictor(ratePredictionDao, DEFAULT_DEPTH);
+        final CurrencyType currencyType = CurrencyType.EUR;
+        Mockito.when(ratePredictionDao.getFirstOrderByDateDesc(currencyType, DEFAULT_DEPTH)).thenReturn(initialData);
+
+        //when + then
+        assertThatThrownBy(() -> ratePredictor.predict(currencyType, startDate, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
     @MethodSource("predictSingleVariants")
-    void predictSingle_whenIsValidInput_thenReturnSinglePrediction(LocalDate localDate,
-                                                                   List<RatePrediction> initialData,
-                                                                   RatePrediction expected) {
+    void predict_whenIsValidInputAndSingleDate_thenReturnSinglePrediction(LocalDate localDate,
+                                                                          List<RatePrediction> initialData,
+                                                                          RatePrediction expected) {
         //given
-        final MeanRatePredictor ratePredictor = new MeanRatePredictor();
+        final RatePredictionDao ratePredictionDao = Mockito.mock(RatePredictionDao.class);
+        final MeanRatePredictor ratePredictor = new MeanRatePredictor(ratePredictionDao, DEFAULT_DEPTH);
+        final CurrencyType currencyType = CurrencyType.EUR;
+        Mockito.when(ratePredictionDao.getFirstOrderByDateDesc(currencyType, DEFAULT_DEPTH)).thenReturn(initialData);
 
         //when
-        final RatePrediction actual = ratePredictor.predictSingle(initialData, localDate);
+        final List<RatePrediction> actual = ratePredictor.predict(currencyType, localDate, null);
 
         //then
         Assertions.assertThat(actual)
-                .usingRecursiveComparison(createRateComparisonConfiguration())
-                .isEqualTo(expected);
+                .hasSize(1)
+                .usingRecursiveFieldByFieldElementComparator(createRateComparisonConfiguration())
+                .isEqualTo(List.of(expected));
     }
 
     @ParameterizedTest
     @MethodSource("predictRangeVariants")
-    void predictRange_whenIsValidInput_thenReturnListOfPredictions(LocalDate startDate,
-                                                                   LocalDate endDate,
-                                                                   List<RatePrediction> initialData,
-                                                                   List<RatePrediction> expected) {
+    void predictRange_whenIsValidInputAndTwoDates_thenReturnListOfPredictions(LocalDate startDate,
+                                                                              LocalDate endDate,
+                                                                              List<RatePrediction> initialData,
+                                                                              List<RatePrediction> expected) {
         //given
-        final MeanRatePredictor ratePredictor = new MeanRatePredictor();
+        final RatePredictionDao ratePredictionDao = Mockito.mock(RatePredictionDao.class);
+        final MeanRatePredictor ratePredictor = new MeanRatePredictor(ratePredictionDao, DEFAULT_DEPTH);
+        final CurrencyType currencyType = CurrencyType.EUR;
+        Mockito.when(ratePredictionDao.getFirstOrderByDateDesc(currencyType, DEFAULT_DEPTH)).thenReturn(initialData);
 
         //when
-        final List<RatePrediction> actual = ratePredictor.predictRange(initialData, startDate, endDate);
+        final List<RatePrediction> actual = ratePredictor.predict(CurrencyType.EUR, startDate, endDate);
 
         //then
         Assertions.assertThat(actual)
